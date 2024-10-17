@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  linkstack:
+    image: 'linkstackorg/linkstack:latest'
+    container_name: linkstack
+    hostname: 'linkstack'
+    environment:
+      TZ: 'Europe/Berlin'                     # Set the timezone
+      SERVER_ADMIN: 'admin@example.com'       # Server admin email
+      HTTP_SERVER_NAME: 'example.com'         # HTTP server name
+      HTTPS_SERVER_NAME: 'example.com'        # HTTPS server name
+      LOG_LEVEL: 'info'                       # Logging level
+      PHP_MEMORY_LIMIT: '512M'                # PHP memory limit
+      UPLOAD_MAX_FILESIZE: '16M'              # Maximum upload file size
+    volumes:
+      - 'linkstack_data:/htdocs'              # Persistent storage
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.linkstack.rule=Host(`example.com`)" # Replace with your domain
+      - "traefik.http.routers.linkstack.entrypoints=websecure"
+      - "traefik.http.routers.linkstack.tls=true"
+      - "traefik.http.services.linkstack.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.linkstack-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.linkstack.middlewares=linkstack-https-redirect"
+      - "traefik.http.routers.linkstack-secure.rule=Host(`example.com`)" # Replace with your domain
+      - "traefik.http.routers.linkstack-secure.entrypoints=websecure"
+      - "traefik.http.routers.linkstack-secure.tls=true"
+      - "traefik.http.services.linkstack-secure.loadbalancer.server.port=80"
+      - "traefik.docker.network=web"
+
+networks:
+  default:
+    external:
+      name: web
+
+volumes:
+  linkstack_data:
+    driver: local
+
